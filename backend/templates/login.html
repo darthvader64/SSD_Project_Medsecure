@@ -1,0 +1,100 @@
+{% extends "index.html" %}
+{% block content %}
+<section class="ms-auth-layout">
+  <div class="ms-auth-hero">
+    <h1>Welcome back to <span>MedSecure</span></h1>
+    <p>
+      Access your encrypted health records from anywhere.
+      Share safely with your doctor using patient-controlled consent.
+    </p>
+    <ul class="ms-auth-benefits">
+      <li>✔️ End-to-end encrypted record storage</li>
+      <li>✔️ Fine-grained consent for each doctor</li>
+      <li>✔️ Full audit trail of every access</li>
+    </ul>
+  </div>
+
+  <div class="ms-auth-card">
+    <h2>Sign in</h2>
+    <p class="ms-auth-subtitle">
+      Use your registered email and password to continue.
+    </p>
+
+    <form id="loginForm" class="ms-form">
+      <label class="ms-field">
+        <span>Email</span>
+        <input
+          type="email"
+          id="email"
+          required
+          placeholder="you@example.com"
+        />
+      </label>
+
+      <label class="ms-field">
+        <span>Password</span>
+        <input
+          type="password"
+          id="password"
+          required
+          placeholder="••••••••"
+        />
+      </label>
+
+      <button type="submit" class="ms-btn ms-btn-primary">
+        Login
+      </button>
+
+      <p class="ms-form-alt">
+        New to MedSecure?
+        <a href="{{ url_for('register_page') }}">Create an account</a>
+      </p>
+
+      <p id="loginError" class="ms-error" style="display:none;"></p>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const API_BASE = "";
+
+  const tokenKey = "medsecure_token";
+  const userKey  = "medsecure_user";
+
+  const form = document.getElementById("loginForm");
+  const errorEl = document.getElementById("loginError");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.msg || "Login failed");
+      }
+
+      localStorage.setItem(tokenKey, data.access_token || data.token);
+      localStorage.setItem(userKey, JSON.stringify(data.user));
+
+      window.location.href = "{{ url_for('dashboard') }}";
+    } catch (err) {
+      errorEl.textContent = err.message || "Unable to login.";
+      errorEl.style.display = "block";
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,882 @@
+{% extends "index.html" %}
+{% block content %}
+<section class="ms-dashboard">
+  <!-- Top banner -->
+  <div class="ms-hero-banner">
+    <div>
+      <h1>Health Records Dashboard</h1>
+      <p>View, share and audit your medical records securely.</p>
+    </div>
+    <div class="ms-user-chip" id="userChip">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Main layout: left = records / consents, right = audit -->
+  <div class="ms-dashboard-grid">
+    <div class="ms-dashboard-main">
+      <!-- Patient records panel -->
+      <section class="ms-card" id="patientRecordsCard">
+        <div class="ms-card-header">
+          <h2>My Health Records</h2>
+          <div class="ms-card-actions">
+            <button class="ms-btn ms-btn-secondary" id="btnRefreshMyRecords">
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- list of patient-owned records -->
+        <div id="myRecordsList" class="ms-list">
+          <p class="ms-muted">No records to display yet.</p>
+        </div>
+
+        <!-- divider -->
+        <div class="ms-card-divider"></div>
+
+        <!-- PATIENT: create / upload record inline form -->
+        <div class="ms-create-record">
+          <h3 class="ms-section-subtitle">Add a new record</h3>
+          <p class="ms-muted">
+            Create a new entry for a report, prescription or investigation.
+          </p>
+
+          <form id="patientCreateRecordForm" class="ms-inline-form">
+            <label class="ms-field">
+              <span>Record title</span>
+              <input
+                id="patientRecordTitle"
+                type="text"
+                placeholder="e.g. Blood Test Report – Nov 2025"
+                required
+              />
+            </label>
+
+            <label class="ms-field">
+              <span>Short description (optional)</span>
+              <textarea
+                id="patientRecordNotes"
+                rows="3"
+                placeholder="Any notes you want to remember about this record..."
+              ></textarea>
+            </label>
+
+            <div class="ms-inline-two">
+              <label class="ms-field">
+                <span>Approx. file size (bytes)</span>
+                <input
+                  id="patientRecordSize"
+                  type="number"
+                  min="1"
+                  placeholder="512"
+                />
+              </label>
+            </div>
+
+            <button type="submit" class="ms-btn ms-btn-primary">
+              Save record
+            </button>
+            <span
+              id="patientCreateRecordStatus"
+              class="ms-status-text"
+              style="margin-left: 0.75rem;"
+            ></span>
+          </form>
+        </div>
+      </section>
+
+      <!-- Doctor accessible records panel -->
+      <section class="ms-card" id="doctorRecordsCard" style="display:none;">
+        <div class="ms-card-header">
+          <h2>Records Shared With Me</h2>
+          <div class="ms-card-actions">
+            <button class="ms-btn ms-btn-secondary" id="btnRefreshDoctorRecords">
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div id="doctorRecordsList" class="ms-list">
+          <p class="ms-muted">No shared records yet.</p>
+        </div>
+      </section>
+
+      <!-- DOCTOR: create detailed patient history -->
+      <section class="ms-card" id="doctorHistoryCard" style="display:none;">
+        <div class="ms-card-header">
+          <h2>Create Patient History</h2>
+        </div>
+        <p class="ms-muted">
+          Use this form to record a detailed visit summary or patient history.
+          The record is owned by the patient and visible to both you and the patient.
+        </p>
+
+        <form id="doctorCreateHistoryForm" class="ms-inline-form">
+          <label class="ms-field">
+            <span>Patient email</span>
+            <input
+              id="doctorPatientEmail"
+              type="email"
+              placeholder="patient@example.com"
+              required
+            />
+          </label>
+
+          <label class="ms-field">
+            <span>Record title</span>
+            <input
+              id="doctorHistoryTitle"
+              type="text"
+              placeholder="e.g. Follow-up Visit – 25 Nov 2025"
+              required
+            />
+          </label>
+
+          <label class="ms-field">
+            <span>Detailed history / visit notes</span>
+            <textarea
+              id="doctorHistoryNotes"
+              rows="5"
+              placeholder="Chief complaint, history of present illness, examination, investigations, assessment, plan..."
+              required
+            ></textarea>
+          </label>
+
+          <button type="submit" class="ms-btn ms-btn-primary">
+            Create history record
+          </button>
+          <span
+            id="doctorCreateHistoryStatus"
+            class="ms-status-text"
+            style="margin-left: 0.75rem;"
+          ></span>
+        </form>
+      </section>
+
+      <!-- Consent management – patient only -->
+      <section class="ms-card" id="consentCard" style="display:none;">
+        <div class="ms-card-header">
+          <h2>Consent Management</h2>
+        </div>
+
+        <div class="ms-consent-layout">
+          <div class="ms-consent-form">
+            <h3>Grant Access to a Doctor</h3>
+            <label class="ms-field">
+              <span>Select record</span>
+              <select id="selectRecord"></select>
+            </label>
+
+            <label class="ms-field">
+              <span>Select doctor</span>
+              <select id="selectDoctor"></select>
+            </label>
+
+            <button
+              type="button"
+              class="ms-btn ms-btn-primary"
+              id="btnGrantConsent"
+              >
+                 Grant Access
+            </button>
+
+
+            <p id="consentMessage" class="ms-success" style="display:none;"></p>
+            <p id="consentError" class="ms-error" style="display:none;"></p>
+          </div>
+
+          <div class="ms-consent-active">
+            <h3>Active Consents</h3>
+            <button
+              class="ms-btn ms-btn-secondary ms-inline-btn"
+              id="btnRefreshConsents"
+            >
+              Refresh
+            </button>
+            <div id="activeConsentsList" class="ms-list">
+              <p class="ms-muted">No active consents.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+                <!-- Admin-only section -->
+      <section class="ms-card ms-admin-card" id="adminPanel" style="display:none;">
+        <div class="ms-card-header">
+          <h2>Admin Panel</h2>
+        </div>
+        <p class="ms-muted">
+          System-wide tools visible only to the MedSecure administrator.
+        </p>
+
+        <!-- System audit logs -->
+        <button class="ms-btn ms-btn-outline" id="btnRefreshAdminAudit">
+          View system audit logs
+        </button>
+
+        <div id="adminAuditList" class="ms-list ms-audit-list ms-admin-audit">
+          <p class="ms-muted">No logs loaded yet.</p>
+        </div>
+
+        <!-- Records overview -->
+        <h3 class="ms-subheading">All patient records</h3>
+        <div id="adminRecordsList" class="ms-list ms-admin-records">
+          <p class="ms-muted">No records loaded yet.</p>
+        </div>
+
+        <!-- Doctor access overview -->
+        <h3 class="ms-subheading">Doctor access overview</h3>
+        <div id="adminDoctorAccessList" class="ms-list ms-admin-access">
+          <p class="ms-muted">No active consents.</p>
+        </div>
+      </section>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const API_BASE = "";
+  const tokenKey = "medsecure_token";
+  const userKey  = "medsecure_user";
+  const ADMIN_EMAIL = "admin@medsecure.local"; // must match backend .env
+  const patientEmailInput  = document.getElementById("patientEmailInput");
+  const historyTitleInput  = document.getElementById("historyTitleInput");
+  const historyNotesInput  = document.getElementById("historyNotesInput");
+  const historyError       = document.getElementById("historyError");
+  const historySuccess     = document.getElementById("historySuccess");
+  const btnCreateHistory   = document.getElementById("btnCreateHistory");
+
+  function getToken() {
+    return localStorage.getItem(tokenKey);
+  }
+  function getUser() {
+    try {
+      return JSON.parse(localStorage.getItem(userKey) || "null");
+    } catch {
+      return null;
+    }
+  }
+  function authHeaders() {
+    const t = getToken();
+    return {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + t,
+    };
+  }
+
+  const userChip    = document.getElementById("userChip");
+  const patientCard = document.getElementById("patientRecordsCard");
+  const doctorCard  = document.getElementById("doctorRecordsCard");
+  const consentCard = document.getElementById("consentCard");
+  const adminPanel  = document.getElementById("adminPanel");
+  const doctorHistoryCard = document.getElementById("doctorHistoryCard");
+
+  const myRecordsList      = document.getElementById("myRecordsList");
+  const doctorRecordsList  = document.getElementById("doctorRecordsList");
+  const auditList          = document.getElementById("auditList");
+  const adminAuditList     = document.getElementById("adminAuditList");
+  const activeConsentsList = document.getElementById("activeConsentsList");
+
+  const selectRecord  = document.getElementById("selectRecord");
+  const selectDoctor  = document.getElementById("selectDoctor");
+  const consentMsg    = document.getElementById("consentMessage");
+  const consentError  = document.getElementById("consentError");
+
+
+  // ------- Initial load -------
+
+  (async function initDashboard() {
+    const token = getToken();
+    if (!token) {
+      window.location.href = "{{ url_for('login_page') }}";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (!res.ok) {
+        throw new Error("Session expired");
+      }
+      const { user } = await res.json();
+      localStorage.setItem(userKey, JSON.stringify(user));
+
+      const isAdmin = user.email === ADMIN_EMAIL;
+      const role    = user.role; // "PATIENT" or "DOCTOR"
+
+      userChip.innerHTML = `
+        <div class="ms-user-email">${user.email}</div>
+        <div class="ms-user-meta">
+          <span class="ms-pill ${role.toLowerCase()}">${role}</span>
+          ${isAdmin ? '<span class="ms-pill admin">ADMIN</span>' : ""}
+        </div>
+      `;
+
+      if (role === "PATIENT") {
+        // Patient view
+        patientCard.style.display = "block";
+        doctorCard.style.display  = "none";
+        consentCard.style.display = "block";
+        if (doctorHistoryCard) doctorHistoryCard.style.display = "none";
+
+        loadMyRecords();
+        loadConsentData();
+        initPatientCreateRecord();
+      } else if (role === "DOCTOR") {
+        // Doctor view
+        patientCard.style.display = "none";
+        doctorCard.style.display  = "block";
+        consentCard.style.display = "none";
+        if (doctorHistoryCard) doctorHistoryCard.style.display = "block";
+
+        loadDoctorRecords();
+        initDoctorCreateHistory();
+      }
+
+      if (isAdmin) {
+  adminPanel.style.display = "block";
+  // auto-load admin data when panel is shown
+  loadAdminAuditLogs();
+  loadAdminRecords();
+  loadAdminDoctorAccess();
+}
+
+
+      loadAuditLogs();
+    } catch (err) {
+      console.error(err);
+      window.location.href = "{{ url_for('login_page') }}";
+    }
+  })();
+
+  // ------- Loaders -------
+
+  async function loadMyRecords() {
+    try {
+      const res = await fetch(`${API_BASE}/ui/my-records`, {
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      const records = data.records || [];
+      if (!records.length) {
+        myRecordsList.innerHTML = '<p class="ms-muted">No records yet.</p>';
+        return;
+      }
+      myRecordsList.innerHTML = records
+        .map(
+          (r) => `
+          <article class="ms-list-item">
+            <div>
+              <div class="ms-item-title">${r.file_name}</div>
+              <div class="ms-item-meta">
+                <span>${(r.file_size || 0)} bytes</span>
+                ${
+                  r.created_at
+                    ? `<span>Created: ${new Date(r.created_at).toLocaleString()}</span>`
+                    : ""
+                }
+              </div>
+            </div>
+          </article>`
+        )
+        .join("");
+    } catch (err) {
+      myRecordsList.innerHTML =
+        '<p class="ms-error-inline">Failed to load records.</p>';
+    }
+  }
+
+  async function loadDoctorRecords() {
+    try {
+      const res = await fetch(`${API_BASE}/ui/doctor-dashboard`, {
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      const records = data.accessible_records || [];
+      if (!records.length) {
+        doctorRecordsList.innerHTML =
+          '<p class="ms-muted">No shared records yet.</p>';
+        return;
+      }
+      doctorRecordsList.innerHTML = records
+        .map(
+          (r) => `
+          <article class="ms-list-item">
+            <div>
+              <div class="ms-item-title">${r.file_name}</div>
+              <div class="ms-item-meta">
+                <span>Patient: ${r.patient_email}</span>
+                ${
+                  r.consent_granted_at
+                    ? `<span>Consent: ${new Date(r.consent_granted_at).toLocaleString()}</span>`
+                    : ""
+                }
+              </div>
+            </div>
+          </article>`
+        )
+        .join("");
+    } catch (err) {
+      doctorRecordsList.innerHTML =
+        '<p class="ms-error-inline">Failed to load shared records.</p>';
+    }
+  }
+
+  async function loadAuditLogs() {
+    try {
+      const res = await fetch(`${API_BASE}/audit-logs`, {
+        headers: authHeaders(),
+      });
+      const logs = await res.json();
+      if (!logs.length) {
+        auditList.innerHTML = '<p class="ms-muted">No recent activity.</p>';
+        return;
+      }
+      auditList.innerHTML = logs
+        .map(
+          (log) => `
+          <article class="ms-list-item">
+            <div>
+              <div class="ms-item-title">${log.action}</div>
+              <div class="ms-item-meta">
+                <span>${log.status || "unknown"}</span>
+                ${
+                  log.timestamp
+                    ? `<span>${new Date(log.timestamp).toLocaleString()}</span>`
+                    : ""
+                }
+                ${log.ip_address ? `<span>IP: ${log.ip_address}</span>` : ""}
+              </div>
+            </div>
+          </article>`
+        )
+        .join("");
+    } catch (err) {
+      auditList.innerHTML =
+        '<p class="ms-error-inline">Failed to load activity.</p>';
+    }
+  }
+
+  async function loadConsentData() {
+    // records select (patient’s own)
+    try {
+      const resRecords = await fetch(`${API_BASE}/ui/my-records`, {
+        headers: authHeaders(),
+      });
+      const data = await resRecords.json();
+      const records = data.records || [];
+      selectRecord.innerHTML = records.length
+        ? records
+            .map(
+              (r) =>
+                `<option value="${r.id}">${r.file_name} (${
+                  (r.file_size || 0)
+                } bytes)</option>`
+            )
+            .join("")
+        : '<option disabled>No records available</option>';
+    } catch {
+      selectRecord.innerHTML =
+        '<option disabled>Unable to load records</option>';
+    }
+
+    // doctors select
+    try {
+      const resDocs = await fetch(`${API_BASE}/ui/doctors-list`, {
+        headers: authHeaders(),
+      });
+      const data = await resDocs.json();
+      const doctors = data.doctors || [];
+      selectDoctor.innerHTML = doctors.length
+        ? doctors
+            .map(
+              (d) =>
+                `<option value="${d.id}">${d.email}</option>`
+            )
+            .join("")
+        : '<option disabled>No doctors found</option>';
+    } catch {
+      selectDoctor.innerHTML =
+        '<option disabled>Unable to load doctors</option>';
+    }
+
+    // active consents
+    try {
+      const resConsents = await fetch(`${API_BASE}/ui/active-consents`, {
+        headers: authHeaders(),
+      });
+      const data = await resConsents.json();
+      const consents = data.consents || [];
+      if (!consents.length) {
+        activeConsentsList.innerHTML =
+          '<p class="ms-muted">No active consents.</p>';
+      } else {
+        activeConsentsList.innerHTML = consents
+          .map(
+            (c) => `
+            <article class="ms-list-item">
+              <div>
+                <div class="ms-item-title">${c.record_name}</div>
+                <div class="ms-item-meta">
+                  <span>Doctor: ${c.doctor_email}</span>
+                  ${
+                    c.granted_at
+                      ? `<span>Granted: ${new Date(c.granted_at).toLocaleString()}</span>`
+                      : ""
+                  }
+                </div>
+              </div>
+            </article>`
+          )
+          .join("");
+      }
+    } catch {
+      activeConsentsList.innerHTML =
+        '<p class="ms-error-inline">Failed to load consents.</p>';
+    }
+  }
+
+  async function grantConsent() {
+    consentMsg.style.display = "none";
+    consentError.style.display = "none";
+
+    const recordId = selectRecord.value;
+    const doctorId = selectDoctor.value;
+    if (!recordId || !doctorId) {
+      consentError.textContent = "Please select both record and doctor.";
+      consentError.style.display = "block";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/ui/grant-consent`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          record_id: Number(recordId),
+          doctor_id: Number(doctorId),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.msg || "Failed to grant consent");
+      }
+      consentMsg.textContent = data.msg || "Consent granted.";
+      consentMsg.style.display = "block";
+      loadConsentData();
+    } catch (err) {
+      consentError.textContent = err.message || "Error granting consent.";
+      consentError.style.display = "block";
+    }
+  }
+
+  async function loadAdminAuditLogs() {
+  const list = document.getElementById("adminAuditList");
+  list.innerHTML = '<p class="ms-muted">Loading system audit logs…</p>';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/audit-logs`, {
+      headers: authHeaders(),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const msg = data.msg || data.error || "Failed to load system logs.";
+      list.innerHTML = `<p class="ms-error-inline">${msg}</p>`;
+      return;
+    }
+
+    // Expected: backend returns an array of logs
+    const logs = Array.isArray(data) ? data : [];
+
+    if (!logs.length) {
+      list.innerHTML =
+        '<p class="ms-muted">No system audit logs yet. They will appear as users log in and access records.</p>';
+      return;
+    }
+
+    list.innerHTML = logs
+      .map(
+        (log) => `
+        <article class="ms-list-item">
+          <div>
+            <div class="ms-item-title">${log.action}</div>
+            <div class="ms-item-meta">
+              <span>User: ${log.user_email || log.user_id}</span>
+              ${
+                log.timestamp
+                  ? `<span>${new Date(log.timestamp).toLocaleString()}</span>`
+                  : ""
+              }
+              ${log.status ? `<span>${log.status}</span>` : ""}
+              ${log.ip_address ? `<span>IP: ${log.ip_address}</span>` : ""}
+            </div>
+          </div>
+        </article>`
+      )
+      .join("");
+  } catch (err) {
+    console.error("Admin audit logs error:", err);
+    list.innerHTML =
+      '<p class="ms-error-inline">Failed to load system logs (network error).</p>';
+  }
+}
+  async function loadAdminRecords() {
+  const list = document.getElementById("adminRecordsList");
+  try {
+    const res = await fetch(`${API_BASE}/admin/records-overview`, {
+      headers: authHeaders(),
+    });
+    const records = await res.json();
+    if (!Array.isArray(records) || !records.length) {
+      list.innerHTML = '<p class="ms-muted">No records loaded.</p>';
+      return;
+    }
+    list.innerHTML = records
+      .map(
+        (r) => `
+        <article class="ms-list-item">
+          <div>
+            <div class="ms-item-title">${r.file_name}</div>
+            <div class="ms-item-meta">
+              <span>Record ID: ${r.id}</span>
+              <span>Patient: ${r.patient_email || "unknown"}</span>
+              ${
+                r.created_at
+                  ? `<span>Created: ${new Date(r.created_at).toLocaleString()}</span>`
+                  : ""
+              }
+              <span>Active consents: ${r.active_consents || 0}</span>
+            </div>
+          </div>
+        </article>`
+      )
+      .join("");
+  } catch (err) {
+    list.innerHTML =
+      '<p class="ms-error-inline">Failed to load records overview.</p>';
+  }
+}
+
+async function loadAdminDoctorAccess() {
+  const list = document.getElementById("adminDoctorAccessList");
+  try {
+    const res = await fetch(`${API_BASE}/admin/doctor-access`, {
+      headers: authHeaders(),
+    });
+    const items = await res.json();
+    if (!Array.isArray(items) || !items.length) {
+      list.innerHTML = '<p class="ms-muted">No active consents.</p>';
+      return;
+    }
+    list.innerHTML = items
+      .map(
+        (c) => `
+        <article class="ms-list-item">
+          <div>
+            <div class="ms-item-title">
+              ${c.record_name || "Record " + c.record_id}
+            </div>
+            <div class="ms-item-meta">
+              <span>Patient: ${c.patient_email || "unknown"}</span>
+              <span>Doctor: ${c.doctor_email || "unknown"}</span>
+              ${
+                c.granted_at
+                  ? `<span>Granted: ${new Date(c.granted_at).toLocaleString()}</span>`
+                  : ""
+              }
+            </div>
+          </div>
+        </article>`
+      )
+      .join("");
+  } catch (err) {
+    list.innerHTML =
+      '<p class="ms-error-inline">Failed to load doctor access overview.</p>';
+  }
+}
+
+
+  async function adminCall(path) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      const data = await res.json();
+      alert(data.message || "Operation completed.");
+    } catch (err) {
+      alert("Admin operation failed.");
+    }
+  }
+
+function initPatientCreateRecord() {
+  const form = document.getElementById("patientCreateRecordForm");
+  if (!form) return;
+
+  const titleInput = document.getElementById("patientRecordTitle");
+  const notesInput = document.getElementById("patientRecordNotes");
+  const sizeInput  = document.getElementById("patientRecordSize");
+  const statusEl   = document.getElementById("patientCreateRecordStatus");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusEl.textContent = "Saving…";
+
+    const title = (titleInput.value || "").trim();
+    const notes = (notesInput.value || "").trim();
+    let size    = parseInt(sizeInput.value, 10);
+
+    if (!title) {
+      statusEl.textContent = "Please enter a title.";
+      return;
+    }
+
+    // If size not provided, approximate from text length
+    if (!size || size <= 0) {
+      size = Math.max(256, (title.length + notes.length) || 512);
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/records`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          file_name: title,
+          file_size: size
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.msg || data.error || "Failed to create record");
+      }
+
+      statusEl.textContent = "Record created ✅";
+      titleInput.value = "";
+      notesInput.value = "";
+      sizeInput.value  = "";
+
+      loadMyRecords();
+      loadConsentData(); // refresh record dropdown
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Error: " + (err.message || "Failed to create");
+    }
+  });
+}
+
+// ------- New: doctor create patient history -------
+
+function initDoctorCreateHistory() {
+  const form = document.getElementById("doctorCreateHistoryForm");
+  if (!form) return;
+
+  const emailInput = document.getElementById("doctorPatientEmail");
+  const titleInput = document.getElementById("doctorHistoryTitle");
+  const notesInput = document.getElementById("doctorHistoryNotes");
+  const statusEl   = document.getElementById("doctorCreateHistoryStatus");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    statusEl.textContent = "Creating history…";
+
+    const patient_email = (emailInput.value || "").trim();
+    const title         = (titleInput.value || "").trim();
+    const notes         = (notesInput.value || "").trim();
+
+    if (!patient_email || !title || !notes) {
+      statusEl.textContent = "Please fill all fields.";
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/doctor/create-patient-history`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          patient_email,
+          title,
+          notes,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.msg || data.error || "Failed to create history");
+      }
+
+      statusEl.textContent = "History record created ✅";
+      // keep patient email/title, clear notes
+      notesInput.value = "";
+
+      loadDoctorRecords();
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "Error: " + (err.message || "Failed to create");
+    }
+  });
+}
+
+    // ------- Button wiring -------
+
+  const btnRefreshMyRecords = document.getElementById("btnRefreshMyRecords");
+  if (btnRefreshMyRecords) {
+    btnRefreshMyRecords.addEventListener("click", loadMyRecords);
+  }
+
+  const btnRefreshDoctorRecords = document.getElementById("btnRefreshDoctorRecords");
+  if (btnRefreshDoctorRecords) {
+    btnRefreshDoctorRecords.addEventListener("click", loadDoctorRecords);
+  }
+
+  const btnRefreshAudit = document.getElementById("btnRefreshAudit");
+  if (btnRefreshAudit) {
+    btnRefreshAudit.addEventListener("click", loadAuditLogs);
+  }
+
+  // ---- Wire buttons safely ----
+  const btnGrant = document.getElementById("btnGrantConsent");
+  if (btnGrant) {
+    btnGrant.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("Grant Access clicked");
+      grantConsent();
+    });
+  }
+
+  const btnRefreshConsents = document.getElementById("btnRefreshConsents");
+  if (btnRefreshConsents) {
+    btnRefreshConsents.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("Refresh consents clicked");
+      loadConsentData();
+    });
+  }
+
+  const btnRefreshAdminAudit = document.getElementById("btnRefreshAdminAudit");
+if (btnRefreshAdminAudit) {
+  btnRefreshAdminAudit.addEventListener("click", loadAdminAuditLogs);
+}
+
+
+  const btnCreateTestData = document.getElementById("btnCreateTestData");
+  if (btnCreateTestData) {
+    btnCreateTestData.addEventListener("click", () =>
+      adminCall("/debug/create-test-data")
+    );
+  }
+
+  const btnCreateTestDoctors = document.getElementById("btnCreateTestDoctors");
+  if (btnCreateTestDoctors) {
+    btnCreateTestDoctors.addEventListener("click", () =>
+      adminCall("/debug/create-test-doctors")
+    );
+  }
+
+
+</script>
+{% endblock %}

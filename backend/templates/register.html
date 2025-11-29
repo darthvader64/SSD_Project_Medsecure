@@ -1,0 +1,111 @@
+{% extends "index.html" %}
+{% block content %}
+<section class="ms-auth-layout">
+  <div class="ms-auth-hero">
+    <h1>Create your <span>MedSecure</span> account</h1>
+    <p>
+      Register as a patient or doctor to start sharing records securely.
+    </p>
+    <ul class="ms-auth-benefits">
+      <li>✔️ Patients control who sees what</li>
+      <li>✔️ Doctors get authorized access only</li>
+      <li>✔️ Every action is logged for transparency</li>
+    </ul>
+  </div>
+
+  <div class="ms-auth-card">
+    <h2>Sign up</h2>
+    <p class="ms-auth-subtitle">
+      All fields are required.
+    </p>
+
+    <form id="registerForm" class="ms-form">
+      <label class="ms-field">
+        <span>Email</span>
+        <input
+          type="email"
+          id="regEmail"
+          required
+          placeholder="you@example.com"
+        />
+      </label>
+
+      <label class="ms-field">
+        <span>Password</span>
+        <input
+          type="password"
+          id="regPassword"
+          required
+          minlength="6"
+          placeholder="At least 6 characters"
+        />
+      </label>
+
+      <label class="ms-field">
+        <span>Role</span>
+        <select id="regRole" required>
+          <option value="PATIENT">Patient</option>
+          <option value="DOCTOR">Doctor</option>
+        </select>
+      </label>
+
+      <button type="submit" class="ms-btn ms-btn-primary">
+        Create account
+      </button>
+
+      <p class="ms-form-alt">
+        Already registered?
+        <a href="{{ url_for('login_page') }}">Back to login</a>
+      </p>
+
+      <p id="registerError" class="ms-error" style="display:none;"></p>
+      <p id="registerSuccess" class="ms-success" style="display:none;"></p>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const API_BASE = "";
+  const form = document.getElementById("registerForm");
+  const errorEl = document.getElementById("registerError");
+  const successEl = document.getElementById("registerSuccess");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.style.display = "none";
+    successEl.style.display = "none";
+    errorEl.textContent = "";
+    successEl.textContent = "";
+
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value.trim();
+    const role = document.getElementById("regRole").value;
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.msg || "Registration failed");
+      }
+
+      successEl.textContent = "Account created! Redirecting to login…";
+      successEl.style.display = "block";
+
+      setTimeout(() => {
+        window.location.href = "{{ url_for('login_page') }}";
+      }, 1200);
+    } catch (err) {
+      errorEl.textContent = err.message || "Unable to register.";
+      errorEl.style.display = "block";
+    }
+  });
+</script>
+{% endblock %}

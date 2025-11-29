@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MedSecure – {{ title or "Secure Health Records" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/medsecure.css') }}"
+  />
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2966/2966485.png">
+</head>
+<body class="ms-body">
+  <header class="ms-header">
+  <div class="ms-header-inner">
+    <a href="{{ url_for('home') }}" class="ms-logo">
+      <span class="ms-logo-icon">🩺</span>
+      <span class="ms-logo-text">MedSecure</span>
+    </a>
+    <nav class="ms-nav">
+      <a href="{{ url_for('home') }}">Home</a>
+      <a href="{{ url_for('login_page') }}" id="navLogin">Login</a>
+      <a href="{{ url_for('register_page') }}" id="navRegister">Register</a>
+      <!-- This is the logout button used on the dashboard -->
+      <a href="#" id="btnLogout" style="display: none;">Logout</a>
+    </nav>
+  </div>
+</header>
+
+
+  <main class="ms-main">
+    {# If a child template provides content, show that.
+       Otherwise, show the landing/marketing content. #}
+    {% block content %}
+    <section class="ms-auth-layout">
+      <div class="ms-auth-hero">
+    <div class="ms-auth-hero-inner">
+
+      <!-- LEFT: your original text untouched -->
+      <div class="ms-auth-hero-copy">
+        <h1>Welcome to <span>MedSecure</span></h1>
+        <p>
+          Patient-first, privacy-first. Store your health records safely and
+          share them only with trusted doctors using consent you control.
+        </p>
+        <ul class="ms-auth-benefits">
+          <li>✔️ Encrypted storage of medical files</li>
+          <li>✔️ Fine-grained consent for each doctor</li>
+          <li>✔️ Full audit history for every access</li>
+        </ul>
+      </div>
+
+    <!-- RIGHT: doctor image -->
+    <div class="ms-auth-hero-image">
+      <img
+        src="/static/img/hero-doctor.jpg"
+        alt="Doctor reviewing medical records"
+      />
+    </div>
+
+  </div>
+</div>
+
+
+      <div class="ms-auth-card">
+        <h2>Get started</h2>
+        <p class="ms-auth-subtitle">
+          Login to your dashboard or create a new account.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a href="{{ url_for('login_page') }}" class="ms-btn ms-btn-primary">
+            Login
+          </a>
+          <a href="{{ url_for('register_page') }}" class="ms-btn ms-btn-secondary">
+            Register
+          </a>
+        </div>
+      </div>
+    </section>
+    {% endblock %}
+  </main>
+
+  <footer class="ms-footer">
+    <div class="ms-footer-inner">
+      <span>© {{ 2025 }} MedSecure. All rights reserved.</span>
+      <span class="ms-footer-sub">
+        Secure medical records sharing platform.
+      </span>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+  <script>
+    (function () {
+      const tokenKey = "medsecure_token";
+      const userKey = "medsecure_user";
+
+      const navLogin = document.getElementById("navLogin");
+      const navRegister = document.getElementById("navRegister");
+      const btnLogout = document.getElementById("btnLogout");
+
+      if (!btnLogout) return;
+
+      const hasToken = !!localStorage.getItem(tokenKey);
+
+      if (hasToken) {
+        // Logged in: hide Login/Register, show Logout
+        if (navLogin) navLogin.style.display = "none";
+        if (navRegister) navRegister.style.display = "none";
+        btnLogout.style.display = "inline-block";
+      } else {
+        // Not logged in: show Login/Register, hide Logout
+        if (navLogin) navLogin.style.display = "inline-block";
+        if (navRegister) navRegister.style.display = "inline-block";
+        btnLogout.style.display = "none";
+      }
+
+      btnLogout.addEventListener("click", function (e) {
+        e.preventDefault();
+        localStorage.removeItem(tokenKey);
+        localStorage.removeItem(userKey);
+        window.location.href = "{{ url_for('login_page') }}";
+      });
+    })();
+  </script>
+</body>
+</html>
