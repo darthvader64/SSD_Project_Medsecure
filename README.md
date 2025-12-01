@@ -57,7 +57,7 @@ The project is implemented as a **client–server web application** with:
 
 Assuming this is the repository root:
 
-.
+
 ├─ backend/               # Flask backend + templates + static files
 │  ├─ app.py              # Main Flask application
 │  ├─ health_records.db   # SQLite database (persistent data)
