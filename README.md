@@ -11,7 +11,6 @@ The project is implemented as a **client–server web application** with:
 - **Jinja2** templates for the UI
 - **Role-based access control** for Patients, Doctors, and Admin
 
----
 
 ## 1. Features
 
@@ -44,7 +43,6 @@ The project is implemented as a **client–server web application** with:
 - Audit logging of critical events
 - Containerized backend using **Docker** for consistent deployment
 
----
 
 ## 2. Tech Stack
 
@@ -54,7 +52,6 @@ The project is implemented as a **client–server web application** with:
 - **Containerization:** Docker, Docker Compose
 - **Other:** HTML5, CSS3
 
----
 
 ## 3. Project Structure
 
@@ -97,29 +94,23 @@ Open a terminal / PowerShell
 Change directory to the repo root (the folder that contains backend/ and docker-compose.yml):
 
 
-    ----
 cd path\to\SSD_Project\SSD_Project
 (Adjust the path according to where you saved the project.)
 
 Start the containers (build + run)
 
 
-    ----
 docker compose up --build
 The first run may take a bit longer because Docker has to build the image.
 
 You should eventually see logs like:
 
-    ----
-    ----
 medsecure-api  | * Serving Flask app 'app'
 medsecure-api  | * Running on all addresses (0.0.0.0)
 medsecure-api  | * Running on http://127.0.0.1:5000
 medsecure-api  | GET /health HTTP/1.1" 200 -
 Open the application in your browser
 
-    ----
-    ----
 http://localhost:5000
 You should see the MedSecure home page.
 
@@ -131,7 +122,6 @@ OR
 From another terminal in the repo root:
 
 
-    ----
 docker compose down
 4.2 Option B – Run with Local Python (Without Docker)
 This is useful if Docker is not available or if you want to modify code live.
@@ -147,29 +137,23 @@ Open a terminal / PowerShell
 Go to the repo root
 
 
-    ----
 cd path\to\SSD_Project\SSD_Project
 Create a virtual environment (only once)
 
 
-    ----
 python -m venv .venv
 Activate the virtual environment
 
 On Windows (PowerShell):
 
 
-    ----
 .\.venv\Scripts\Activate.ps1
 On Windows (CMD):
 
-    ----
-    ----
+   
 .venv\Scripts\activate.bat
 On macOS / Linux:
 
-
-    ----
 source .venv/bin/activate
 After activation you should see (.venv) at the start of your prompt.
 
@@ -178,24 +162,19 @@ Install backend dependencies
 From the repo root:
 
 
-    ----
 pip install -r backend/requirements.txt
 Run the Flask app
 
 
-    ----
 cd backend
 python app.py
 You should see something like:
 
-    ----
-    ----
 * Serving Flask app 'app'
 * Running on http://127.0.0.1:5000
 Open the app in your browser
 
-    ----
-    ----
+    
 http://127.0.0.1:5000
 Stop the app
 
@@ -204,7 +183,6 @@ Press Ctrl + C in the terminal.
 Deactivate the virtual environment (optional when you’re done)
 
 
-    ----
 deactivate
 5. Default Users & Roles (Example)
 Depending on how you seeded your database, you may have some default accounts.
@@ -266,22 +244,18 @@ View doctor access overview.
 To verify that the API is reachable (especially when running in Docker), the backend exposes a simple health check:
 
 http
-    ----
 GET /health
 Expected response (HTTP 200):
 
 json
-    ----
 {"status": "ok"}
 You can open:
 
-    ----
-    ----
+   
 http://localhost:5000/health
 in a browser or use curl:
 
 
-    ----
 curl http://localhost:5000/health
 8. Troubleshooting
 8.1 Docker: Cannot connect to the Docker daemon / pipe error
@@ -300,8 +274,6 @@ Haven’t installed dependencies.
 
 Fix:
 
-
-    ----
 cd path\to\SSD_Project\SSD_Project
 .\.venv\Scripts\Activate.ps1
 pip install -r backend/requirements.txt
@@ -314,7 +286,7 @@ Close any other Flask / web servers
 Or, edit app.py to use another port:
 
 python
-    ----
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=False)
 and update Docker / your browser URL accordingly.
@@ -325,7 +297,6 @@ Make sure Docker Desktop is running.
 In terminal:
 
 
-    ----
 cd path\to\SSD_Project\SSD_Project
 docker compose up --build
 Open browser at http://localhost:5000.
@@ -345,7 +316,6 @@ Log in as admin and show audit logs / records overview
 After demo:
 
 
-    ----
 docker compose down
 10. Credits
 Developed as part of the Secure Software Development / Security Engineering coursework.
